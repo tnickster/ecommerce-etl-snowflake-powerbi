@@ -283,7 +283,6 @@ SELECT 'carts' as table_name, COUNT(*) as row_count FROM carts_table;
 
 ## Future Enhancements
 
-- **Automation**: Implement Apache Airflow for scheduled pipeline execution
 - **Real-time Processing**: Add streaming capabilities with Kafka/Kinesis
 - **Advanced Analytics**: Machine learning models for customer segmentation
 - **Additional Data Sources**: Extend to other e-commerce APIs
