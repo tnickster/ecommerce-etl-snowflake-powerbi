@@ -15,6 +15,40 @@ This pipeline implements a modern ELT (Extract, Load, Transform) pattern with co
 - **Storage**: Processed data stored in Amazon S3 buckets
 - **Warehousing**: Structured data loaded into Snowflake tables
 - **Analytics**: SQL-based business intelligence and Power BI visualizations
+- **Automation**: Apache Airflow orchestration for production deployment
+
+## Automation with Apache Airflow
+
+This pipeline includes full automation capabilities using Apache Airflow for production deployment.
+
+### Features
+- **Daily scheduled execution** at 6 AM UTC
+- **Parallel data extraction** for optimal performance
+- **Error handling and retries** for reliability
+- **Automatic directory creation** for clean deployments
+- **Environment variable integration** for secure configuration
+
+### Quick Start
+```bash
+# Install Airflow dependencies
+pip install -r airflow/requirements.txt
+
+# Deploy DAG
+cp airflow/dags/ecommerce_etl_dag.py ~/airflow/dags/
+
+# Start Airflow services
+airflow webserver --port 8080 &
+airflow scheduler &
+```
+
+See [airflow/README.md](airflow/README.md) for detailed setup instructions.
+
+### Airflow DAG Structure
+```
+Extract APIs → Transform Data → Upload S3 → Load Snowflake
+     ↓              ↓            ↓          ↓
+  (Parallel)    (Sequential)  (AWS)    (SQL DDL)
+```
 
 ## Business Intelligence Dashboard
 
@@ -48,38 +82,44 @@ This pipeline implements a modern ELT (Extract, Load, Transform) pattern with co
 - **Data Quality**: Pipeline monitoring, data validation metrics
 
 ### Business Recommendations:
-> ** Business insights and strategic recommendations will be published following dashboard completion and data analysis.**
+> **Business insights and strategic recommendations will be published following dashboard completion and data analysis.**
 
 *Interactive Power BI dashboard and detailed business insights coming soon - check back for updates!*
 
 ## Project Structure
 
 ```
+├── airflow/
+│   ├── dags/
+│   │   └── ecommerce_etl_dag.py    # Automated workflow orchestration
+│   ├── requirements.txt            # Airflow dependencies
+│   └── README.md                   # Airflow setup guide
 ├── extract/
-│   ├── data/                    # Raw CSV files from API extraction
-│   ├── fetch_products.py        # Extract product catalog data
-│   ├── fetch_users.py           # Extract user/customer data
-│   └── fetch_carts.py           # Extract shopping cart data
+│   ├── data/                       # Raw CSV files from API extraction
+│   ├── fetch_products.py           # Extract product catalog data
+│   ├── fetch_users.py              # Extract user/customer data
+│   └── fetch_carts.py              # Extract shopping cart data
 ├── transform/
-│   ├── cleaned/                 # Processed CSV files ready for upload
-│   └── transform.ipynb          # Jupyter notebook for data cleaning
+│   ├── cleaned/                    # Processed CSV files ready for upload
+│   └── transform.ipynb             # Jupyter notebook for data cleaning
 ├── load/
-│   └── upload_cleaned.py        # S3 upload script using boto3
+│   └── upload_cleaned.py           # S3 upload script using boto3
 ├── sql/
 │   ├── ddl/
-│   │   └── create_tables.sql    # Snowflake table creation scripts
+│   │   └── create_tables.sql       # Snowflake table creation scripts
 │   └── queries/
-│       └── analytics.sql        # Business intelligence queries
-├── dashboards/                  # Power BI dashboard files (coming soon)
-│   ├── screenshots/             # Dashboard screenshots
-│   ├── reports/                 # Exported dashboard files
-│   └── insights/                # Business insights documentation
-├── requirements.txt             # Python dependencies
-├── .gitignore                   # Git ignore file
-└── README.md                    # Project documentation
+│       └── analytics.sql           # Business intelligence queries
+├── dashboards/                     # Power BI dashboard files (coming soon)
+│   ├── screenshots/                # Dashboard screenshots
+│   ├── reports/                    # Exported dashboard files
+│   └── insights/                   # Business insights documentation
+├── requirements.txt                # Python dependencies
+├── .env.example                    # Environment variable template
+├── .gitignore                      # Git ignore file
+└── README.md                       # Project documentation
 ```
 
-## 🔧 Tech Stack
+## Tech Stack
 
 - **Cloud Platform**: Amazon Web Services (AWS)
 - **Storage**: Amazon S3
@@ -87,6 +127,7 @@ This pipeline implements a modern ELT (Extract, Load, Transform) pattern with co
 - **Programming Language**: Python 3.13
 - **Data Processing**: pandas, requests
 - **Infrastructure**: boto3 for AWS integration
+- **Orchestration**: Apache Airflow
 - **Visualization**: Power BI (in development)
 
 ## Data Sources
@@ -104,6 +145,7 @@ The pipeline extracts data from three main FakeStore API endpoints:
 - **Scalable Architecture**: Designed for easy extension to additional API endpoints
 - **Data Quality**: Duplicate removal and null value handling
 - **Business Intelligence**: 15+ analytical queries for insights generation
+- **Production Automation**: Apache Airflow workflow orchestration
 - **Professional Documentation**: Complete setup and usage instructions
 
 ## Getting Started
@@ -114,12 +156,13 @@ The pipeline extracts data from three main FakeStore API endpoints:
 - Snowflake account with warehouse, database, and schema privileges
 - FakeStore API access (free, no auth required)
 - SnowSQL CLI tool installed
+- Apache Airflow (optional, for automation)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ecommerce-etl-pipeline.git
+git clone https://github.com/tnickster/ecommerce-etl-pipeline.git
 cd ecommerce-etl-pipeline
 ```
 
@@ -130,7 +173,10 @@ pip install -r requirements.txt
 
 3. Set up environment variables:
 ```bash
-# Create .env file with your AWS and Snowflake credentials
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your credentials
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_REGION=us-east-1
@@ -156,8 +202,10 @@ snowsql -a your_account -u your_username -d ECOMMERCE_DB -s RAW_DATA -f sql/ddl/
 
 ## Pipeline Workflow
 
-### 1. Data Extraction
-```python
+### Manual Execution
+
+#### 1. Data Extraction
+```bash
 # Extract products data
 python extract/fetch_products.py
 
@@ -169,26 +217,48 @@ python extract/fetch_carts.py
 ```
 Each script connects to the FakeStore API, retrieves JSON data, normalizes it using pandas, and saves as CSV files.
 
-### 2. Data Transformation
+#### 2. Data Transformation
 The transformation process handles:
 - **Column Standardization**: Converts column names to lowercase, replaces spaces with underscores
 - **Data Cleaning**: Removes duplicates and empty rows
 - **Quality Validation**: Ensures data integrity before upload
 - **File Output**: Creates cleaned CSV files ready for upload
 
-### 3. S3 Upload
-```python
+#### 3. S3 Upload
+```bash
 python load/upload_cleaned.py
 ```
 Uses boto3 to upload cleaned CSV files to S3 with proper error handling and logging.
 
-### 4. Snowflake Integration
+#### 4. Snowflake Integration
 ```sql
 -- Load data from S3 to Snowflake
 COPY INTO products_table FROM @s3_stage/products_clean.csv FILE_FORMAT = csv_format;
 COPY INTO users_table FROM @s3_stage/users_clean.csv FILE_FORMAT = csv_format;  
 COPY INTO carts_table FROM @s3_stage/carts_clean.csv FILE_FORMAT = csv_format;
 ```
+
+### Automated Execution with Airflow
+
+For production deployment, use the included Airflow DAG:
+
+```bash
+# Install Airflow dependencies
+pip install -r airflow/requirements.txt
+
+# Initialize Airflow
+export AIRFLOW_HOME=~/airflow
+airflow db init
+
+# Deploy DAG
+cp airflow/dags/ecommerce_etl_dag.py ~/airflow/dags/
+
+# Start Airflow services
+airflow webserver --port 8080 &
+airflow scheduler &
+```
+
+Access the Airflow UI at http://localhost:8080 to monitor and manage pipeline execution.
 
 ### 5. Business Intelligence Analysis
 Run analytical queries to generate insights:
@@ -231,35 +301,111 @@ ORDER BY total_items_purchased DESC;
 
 ## Key Implementation Details
 
-### Data Transformation Logic
-```python
-# Column standardization and cleaning
-df.columns = (
-    df.columns.str.strip()
-    .str.lower()
-    .str.replace(" ", "_")
-    .str.replace(r"[^\w_]", "", regex=True)
-)
+### Data Extraction Process
+The extraction scripts connect to FakeStore API endpoints and handle data retrieval:
 
-# Data quality improvements
-df = df.drop_duplicates()
-df = df.dropna(how="all")
+```python
+# Example from fetch_products.py
+import pandas as pd
+import requests
+import os
+
+# Create data directory
+os.makedirs("data", exist_ok=True)
+
+# API call with error handling
+response = requests.get("https://fakestoreapi.com/products")
+if response.status_code == 200:
+    products = response.json()
+    
+    # Normalize nested JSON structure
+    df = pd.json_normalize(products)
+    
+    # Save to CSV for transformation pipeline
+    df.to_csv("data/products.csv", index=False)
+    print("Products data extracted successfully")
+```
+
+### Data Transformation Pipeline
+```python
+# Core transformation logic from transform.ipynb
+import pandas as pd
+from pathlib import Path
+
+# Process all CSV files
+for csv_file in raw_dir.glob("*.csv"):
+    df = pd.read_csv(csv_file)
+    
+    # Column standardization
+    df.columns = (
+        df.columns.str.strip()           # Remove whitespace
+        .str.lower()                     # Convert to lowercase
+        .str.replace(" ", "_")           # Replace spaces with underscores
+        .str.replace(r"[^\w_]", "", regex=True)  # Remove special characters
+    )
+    
+    # Data quality improvements
+    df = df.drop_duplicates()           # Remove duplicate rows
+    df = df.dropna(how="all")          # Remove completely empty rows
+    
+    # Save cleaned data
+    cleaned_name = csv_file.stem + "_clean.csv"
+    df.to_csv(transform_dir / cleaned_name, index=False)
 ```
 
 ### AWS S3 Integration
 ```python
+# S3 upload implementation from upload_cleaned.py
+from pathlib import Path
+import boto3
+import os
+from dotenv import load_dotenv
+
+# Load environment variables securely
+load_dotenv()
+
+# Initialize S3 client with credentials
 s3 = boto3.client(
     "s3",
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name=os.getenv("AWS_REGION")
 )
 
-s3.upload_file(
-    Filename=str(csv_file),
-    Bucket=S3_BUCKET_NAME,
-    Key=f"cleaned/{csv_file.name}"
-)
+# Upload files with error handling
+for csv_file in csv_files:
+    s3_key = f"cleaned/{csv_file.name}"
+    
+    try:
+        s3.upload_file(
+            Filename=str(csv_file),
+            Bucket=S3_BUCKET_NAME,
+            Key=s3_key
+        )
+        print(f"Upload successful: {csv_file.name}")
+    except Exception as e:
+        print(f"Upload failed for {csv_file.name}: {e}")
+```
+
+### Snowflake Data Warehouse Setup
+```sql
+-- Database setup with proper organization
+CREATE DATABASE IF NOT EXISTS ECOMMERCE_DB;
+CREATE SCHEMA IF NOT EXISTS ECOMMERCE_DB.RAW_DATA;
+USE ECOMMERCE_DB.RAW_DATA;
+
+-- Products table with appropriate data types
+CREATE OR REPLACE TABLE products_table (
+    id INTEGER PRIMARY KEY,
+    title VARCHAR(500) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    description TEXT,
+    category VARCHAR(100),
+    image VARCHAR(500),
+    rating_rate DECIMAL(3,2),
+    rating_count INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP()
+);
 ```
 
 ## Monitoring and Validation
@@ -280,6 +426,7 @@ SELECT 'carts' as table_name, COUNT(*) as row_count FROM carts_table;
 - **Data validation**: Automated checks for data quality and completeness
 - **Error handling**: Comprehensive logging and retry mechanisms
 - **Performance tracking**: Query execution times and data processing metrics
+- **Airflow monitoring**: Task success rates, execution duration, and scheduling
 
 ## Future Enhancements
 
@@ -288,6 +435,15 @@ SELECT 'carts' as table_name, COUNT(*) as row_count FROM carts_table;
 - **Additional Data Sources**: Extend to other e-commerce APIs
 - **dbt Integration**: Add data modeling and transformation layers
 - **Monitoring Dashboard**: Real-time pipeline health monitoring
+- **CI/CD Pipeline**: Automated testing and deployment
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
@@ -297,4 +453,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Nicholas Tarazi** - nicholas.tarazi7@gmail.com  
 **Project Link**: https://github.com/tnickster/ecommerce-etl-pipeline  
-**LinkedIn**: https://www.linkedin.com/in/nicholas-tarazi/ 
+**LinkedIn**: https://www.linkedin.com/in/nicholas-tarazi/
